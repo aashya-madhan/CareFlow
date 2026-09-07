@@ -1,0 +1,2 @@
+# Tell GitHub Linguist to exclude Jinja2 templates from the language breakdown
+*.html linguist-detectable=false
