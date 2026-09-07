@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% set active = "operational" %}
+{% block title %}Operational Analysis{% endblock %}
+{% block page_title %}Operational Analysis{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Operational Analysis</h2>
+  <p>Capacity, workload, wait times and efficiency — all computed in Python.</p>
+</div>
+
+<div class="kpi-grid">
+  {% set cards = [
+    ("Total Appointments", kpi.total|format_number,        "fa-calendar-check",   "blue",   ""),
+    ("Attendance Rate",    kpi.attendance_rate|string+"%", "fa-user-check",       "green",  kpi.showed|string+" attended"),
+    ("No-Show Rate",       kpi.no_show_rate|string+"%",    "fa-user-xmark",       "red",    kpi.no_show|string+" missed"),
+    ("Avg Wait Time",      kpi.avg_wait|string+" min",     "fa-stopwatch",        "orange", "per appointment"),
+    ("Avg Lead Days",      kpi.avg_lead|string+" days",    "fa-calendar-days",    "purple", "scheduled ahead"),
+    ("High Risk",          kpi.high_risk|format_number,    "fa-triangle-exclamation","teal","appointments"),
+  ] %}
+  {% for label, value, icon, color, sub in cards %}
+  <div class="kpi-card kpi-{{ color }}">
+    <div class="kpi-icon"><i class="fa-solid {{ icon }}"></i></div>
+    <div class="kpi-body">
+      <div class="kpi-label">{{ label }}</div>
+      <div class="kpi-value">{{ value }}</div>
+      {% if sub %}<div class="kpi-sub">{{ sub }}</div>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="charts-row">
+  <div class="chart-card wide">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-chart-line"></i> Monthly Trend</h3></div>
+    <div class="chart-wrapper"><canvas id="monthlyChart" data-chart="{{ monthly_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-bed-pulse"></i> Capacity by Dept</h3></div>
+    <div class="chart-wrapper"><canvas id="capacityChart" data-chart="{{ capacity_chart }}"></canvas></div>
+  </div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-user-tie"></i> Doctor Workload</h3></div>
+    <div class="chart-wrapper"><canvas id="doctorChart" data-chart="{{ doctor_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-sun"></i> Peak Days</h3></div>
+    <div class="chart-wrapper"><canvas id="dowChart" data-chart="{{ dow_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-stopwatch"></i> Avg Wait by Dept</h3></div>
+    <div class="chart-wrapper"><canvas id="waitChart" data-chart="{{ wait_chart }}"></canvas></div>
+  </div>
+</div>
+
+{# Department table — fully Python-rendered #}
+<div class="table-card">
+  <div class="table-card-header">
+    <h3><i class="fa-solid fa-stethoscope"></i> Department Performance</h3>
+  </div>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr><th>Department</th><th>Total</th><th>Showed</th><th>No-Show</th><th>Rate</th><th>Avg Wait</th><th>Trend</th></tr>
+      </thead>
+      <tbody>
+        {% for d in dept_stats %}
+        {% set rate_color = "var(--red)" if d.no_show_rate > 25 else "var(--yellow)" if d.no_show_rate > 15 else "var(--green)" %}
+        <tr>
+          <td><strong>{{ d.department }}</strong></td>
+          <td>{{ d.total }}</td>
+          <td style="color:var(--green)">{{ d.showed }}</td>
+          <td style="color:var(--red)">{{ d.no_show }}</td>
+          <td style="color:{{ rate_color }};font-weight:700">{{ d.no_show_rate }}%</td>
+          <td>{{ d.avg_wait }} min</td>
+          <td>
+            {% if d.no_show_rate > 25 %}
+              <span class="trend-up"><i class="fa-solid fa-arrow-trend-up"></i> Rising</span>
+            {% elif d.no_show_rate < 15 %}
+              <span class="trend-down"><i class="fa-solid fa-arrow-trend-down"></i> Falling</span>
+            {% else %}
+              <span class="trend-flat"><i class="fa-solid fa-minus"></i> Stable</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty-row">No data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  initChart('monthlyChart', renderTrendChart);
+  initChart('capacityChart',renderCapacityChart);
+  initChart('doctorChart',  renderDoctorChart);
+  initChart('dowChart',     renderDowChart);
+  initChart('waitChart',    renderWaitChart);
+});
+</script>
+{% endblock %}

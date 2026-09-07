@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% set active = "patients" %}
+{% block title %}Patients{% endblock %}
+{% block page_title %}Patient Directory{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Patient Directory</h2>
+  <p>Search and view individual patient profiles.</p>
+</div>
+
+<div class="table-card">
+  <div class="table-card-header">
+    <h3><i class="fa-solid fa-users"></i> All Patients</h3>
+    <div class="table-controls">
+      <form method="get" class="filter-inline">
+        <input type="text" name="search" value="{{ search }}"
+               placeholder="Search name or code…" class="table-search"
+               onchange="this.form.submit()"/>
+      </form>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Code</th><th>Name</th><th>Age</th><th>Gender</th>
+          <th>Neighbourhood</th><th>Conditions</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in patients %}
+        <tr>
+          <td class="text-muted"><strong>{{ p.patient_code }}</strong></td>
+          <td><strong>{{ p.full_name }}</strong></td>
+          <td>{{ p.age }} <small class="text-muted">({{ p.age_group }})</small></td>
+          <td>{{ p.gender }}</td>
+          <td>{{ p.neighbourhood or '—' }}</td>
+          <td>
+            {% if p.hypertension %}<span class="cond-tag">HBP</span>{% endif %}
+            {% if p.diabetes     %}<span class="cond-tag">DM</span>{% endif %}
+            {% if p.alcoholism   %}<span class="cond-tag">ALC</span>{% endif %}
+            {% if p.handicap     %}<span class="cond-tag">DIS</span>{% endif %}
+            {% if p.scholarship  %}<span class="cond-tag sch">SCH</span>{% endif %}
+            {% if not (p.hypertension or p.diabetes or p.alcoholism or p.handicap or p.scholarship) %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="actions-cell">
+            <a href="{{ url_for('patients.profile', patient_id=p.id) }}"
+               class="action-btn edit" title="View Profile">
+              <i class="fa-solid fa-id-card"></i>
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty-row">No patients found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <span>Showing {{ ((pagination.page-1)*pagination.per_page)+1 }}–{{ [pagination.page*pagination.per_page, pagination.total]|min }} of {{ pagination.total }}</span>
+    <div class="pagination">
+      {% if pagination.has_prev %}
+        <a href="?page={{ pagination.page-1 }}&search={{ search }}" class="page-btn"><i class="fa-solid fa-chevron-left"></i></a>
+      {% endif %}
+      {% for p in range(1, pagination.pages+1) %}
+        {% if p == pagination.page %}
+          <span class="page-btn active">{{ p }}</span>
+        {% elif p <= 2 or p >= pagination.pages-1 or (p >= pagination.page-2 and p <= pagination.page+2) %}
+          <a href="?page={{ p }}&search={{ search }}" class="page-btn">{{ p }}</a>
+        {% elif p == 3 or p == pagination.pages-2 %}
+          <span class="page-btn" style="border:none;padding:0 4px">…</span>
+        {% endif %}
+      {% endfor %}
+      {% if pagination.has_next %}
+        <a href="?page={{ pagination.page+1 }}&search={{ search }}" class="page-btn"><i class="fa-solid fa-chevron-right"></i></a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

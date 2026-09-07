@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% set active = "admin" %}
+{% block title %}{{ "Edit" if action=="edit" else "New" }} User{% endblock %}
+{% block page_title %}{{ "Edit" if action=="edit" else "New" }} User{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>{{ "Edit" if action=="edit" else "Add New" }} User</h2>
+</div>
+<div class="form-card">
+  <form method="post">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Full Name <span class="req">*</span></label>
+        <input type="text" name="full_name" required class="form-control"
+               value="{{ user.full_name if user else '' }}" placeholder="Dr. Jane Smith"/>
+      </div>
+      <div class="form-group">
+        <label>Email <span class="req">*</span></label>
+        <input type="email" name="email" required class="form-control"
+               value="{{ user.email if user else '' }}" placeholder="jane@hospital.com"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Password {{ "(leave blank to keep current)" if action=="edit" else "" }} <span class="req">{{ "*" if action=="new" }}</span></label>
+        <input type="password" name="password" class="form-control"
+               placeholder="{{ 'New password…' if action=='edit' else 'Min 6 characters' }}"
+               {{ "required" if action=="new" else "" }}/>
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select name="role" class="form-control">
+          <option value="staff" {{ "selected" if user and user.role=="staff" }}>Staff</option>
+          <option value="admin" {{ "selected" if user and user.role=="admin" }}>Admin</option>
+        </select>
+      </div>
+    </div>
+    {% if action == "edit" %}
+    <div class="form-group checkbox-group">
+      <label>
+        <input type="checkbox" name="is_active" {{ "checked" if user and user.is_active }}/>
+        Account Active
+      </label>
+    </div>
+    {% endif %}
+    <div class="form-actions">
+      <a href="{{ url_for('admin.users') }}" class="btn-cancel">Cancel</a>
+      <button type="submit" class="btn-save">
+        <i class="fa-solid fa-floppy-disk"></i>
+        {{ "Update" if action=="edit" else "Create" }} User
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

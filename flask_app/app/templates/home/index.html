@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>CareFlow — Hospital Appointment Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body class="home-body">
+
+<!-- ── NAV ──────────────────────────────────────────────────────────────── -->
+<nav class="home-nav">
+  <div class="home-nav-inner">
+    <div class="home-brand">
+      <i class="fa-solid fa-hospital"></i>
+      <span>CareFlow</span>
+    </div>
+    <div class="home-nav-links">
+      <a href="#features">Features</a>
+      <a href="#stats">Statistics</a>
+      <a href="#about">About</a>
+      <a href="{{ url_for('auth.login') }}"  class="btn-nav-login">Sign In</a>
+      <a href="{{ url_for('auth.signup') }}" class="btn-nav-signup">Get Started</a>
+    </div>
+    <!-- mobile toggle -->
+    <button class="home-menu-btn" id="homeMenuBtn"><i class="fa-solid fa-bars"></i></button>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge"><i class="fa-solid fa-shield-halved"></i> Trusted Healthcare Analytics</div>
+    <h1 class="hero-title">
+      Reduce Hospital<br/>
+      <span class="hero-accent">No-Shows</span> &amp; Improve<br/>
+      Operational Efficiency
+    </h1>
+    <p class="hero-sub">
+      CareFlow turns your appointment data into actionable insights.
+      Identify at-risk patients, optimise schedules, and track department
+      performance — all in one place.
+    </p>
+    <div class="hero-btns">
+      <a href="{{ url_for('auth.signup') }}" class="btn-hero-primary">
+        <i class="fa-solid fa-rocket"></i> Get Started Free
+      </a>
+      <a href="{{ url_for('auth.login') }}" class="btn-hero-outline">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+      </a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-card-stack">
+      <div class="hero-card hc-blue">
+        <i class="fa-solid fa-calendar-check"></i>
+        <div>
+          <strong>{{ "{:,}".format(total_appts) }}</strong>
+          <span>Total Appointments</span>
+        </div>
+      </div>
+      <div class="hero-card hc-red">
+        <i class="fa-solid fa-user-xmark"></i>
+        <div>
+          <strong>{{ noshow_rate }}%</strong>
+          <span>No-Show Rate</span>
+        </div>
+      </div>
+      <div class="hero-card hc-green">
+        <i class="fa-solid fa-users"></i>
+        <div>
+          <strong>{{ "{:,}".format(total_patients) }}</strong>
+          <span>Unique Patients</span>
+        </div>
+      </div>
+      <div class="hero-card hc-purple">
+        <i class="fa-solid fa-building-columns"></i>
+        <div>
+          <strong>{{ total_depts }}</strong>
+          <span>Departments</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS BANNER ──────────────────────────────────────────────────────── -->
+<section class="stats-banner" id="stats">
+  <div class="stats-grid">
+    {% for icon, val, label, color in [
+      ("fa-calendar-check", "{:,}".format(total_appts),       "Appointments Tracked",    "blue"),
+      ("fa-user-xmark",     noshow_rate|string + "%",          "Overall No-Show Rate",    "red"),
+      ("fa-users",          "{:,}".format(total_patients),    "Unique Patients",          "green"),
+      ("fa-building-columns", total_depts|string,             "Clinical Departments",     "purple"),
+      ("fa-chart-line",     "Real-time",                      "Analytics Engine",         "teal"),
+      ("fa-shield-halved",  "Secure",                         "Role-Based Access",        "orange"),
+    ] %}
+    <div class="stat-item stat-{{ color }}">
+      <div class="stat-icon"><i class="fa-solid {{ icon }}"></i></div>
+      <div class="stat-val">{{ val }}</div>
+      <div class="stat-label">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ── FEATURES ─────────────────────────────────────────────────────────── -->
+<section class="features" id="features">
+  <div class="section-header">
+    <h2>Everything you need to manage hospital appointments</h2>
+    <p>From no-show prediction to department performance — CareFlow covers it all.</p>
+  </div>
+  <div class="features-grid">
+    {% for icon, title, desc, color in [
+      ("fa-gauge-high",          "Live Dashboard",            "Real-time KPIs, monthly trends, and at-a-glance performance metrics powered by your actual database.", "blue"),
+      ("fa-user-xmark",          "No-Show Analysis",          "Deep-dive into no-show patterns by department, age, gender, lead time, and SMS reminder effectiveness.", "red"),
+      ("fa-chart-line",          "Operational Analysis",      "Monitor doctor workload, department capacity, average wait times, and peak appointment hours.", "green"),
+      ("fa-bell",                "Appointment Reminders",     "See upcoming appointments due soon. Identify patients with no SMS confirmation and flag for outreach.", "orange"),
+      ("fa-people-group",        "Patient Demographics",      "Understand your patient population — chronic conditions, neighbourhood distribution, and loyalty patterns.", "purple"),
+      ("fa-id-card",             "Patient Profiles",          "Individual patient dashboards: full appointment history, risk trend, conditions, and no-show pattern.", "teal"),
+      ("fa-moon",                "Dark Mode",                 "Switch between light and dark themes. Your preference is remembered across sessions.", "indigo"),
+      ("fa-file-chart-column",   "Reports & PDF Export",      "One-click CSV downloads and print-ready PDF reports for every analysis page.", "yellow"),
+      ("fa-cloud-arrow-up",      "CSV Import",                "Upload the Kaggle Medical No-Show dataset or any custom CSV format — Python handles all parsing.", "green"),
+    ] %}
+    <div class="feature-card">
+      <div class="feature-icon fi-{{ color }}"><i class="fa-solid {{ icon }}"></i></div>
+      <h3>{{ title }}</h3>
+      <p>{{ desc }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ──────────────────────────────────────────────────────── -->
+<section class="how-it-works" id="about">
+  <div class="section-header">
+    <h2>Get up and running in 3 steps</h2>
+    <p>No complex setup. Upload your data and start analysing immediately.</p>
+  </div>
+  <div class="steps-grid">
+    {% for n, icon, title, desc in [
+      (1, "fa-cloud-arrow-up",   "Upload Your Data",     "Import your CSV appointment file — the Kaggle dataset or your own hospital export. Python auto-maps all columns."),
+      (2, "fa-chart-bar",        "Explore Analytics",    "Instantly see live KPIs, interactive charts, and department breakdowns all computed server-side in Python."),
+      (3, "fa-file-chart-column","Export & Share",       "Download CSV reports, print PDF summaries, or share insights with your team through role-based access."),
+    ] %}
+    <div class="step-card">
+      <div class="step-num">{{ n }}</div>
+      <div class="step-icon"><i class="fa-solid {{ icon }}"></i></div>
+      <h3>{{ title }}</h3>
+      <p>{{ desc }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- ── CTA ──────────────────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="cta-content">
+    <h2>Ready to reduce no-shows?</h2>
+    <p>Create your free account and upload your appointment data in minutes.</p>
+    <div class="hero-btns">
+      <a href="{{ url_for('auth.signup') }}" class="btn-hero-primary">
+        <i class="fa-solid fa-user-plus"></i> Create Free Account
+      </a>
+      <a href="{{ url_for('auth.login') }}" class="btn-hero-outline">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer class="home-footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <i class="fa-solid fa-hospital"></i> CareFlow
+      <span>Hospital Appointment Analytics</span>
+    </div>
+    <div class="footer-links">
+      <a href="{{ url_for('auth.login') }}">Sign In</a>
+      <a href="{{ url_for('auth.signup') }}">Sign Up</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 CareFlow. Built with Flask + PostgreSQL.</div>
+  </div>
+</footer>
+
+<script>
+document.getElementById('homeMenuBtn')?.addEventListener('click', () => {
+  document.querySelector('.home-nav-links').classList.toggle('open');
+});
+</script>
+</body>
+</html>

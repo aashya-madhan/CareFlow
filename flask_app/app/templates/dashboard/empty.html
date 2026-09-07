@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="empty-state-page">
+  <div class="empty-state-icon">
+    <i class="fa-solid fa-chart-simple"></i>
+  </div>
+  <h2>Welcome to CareFlow, {{ current_user.full_name.split()[0] }}!</h2>
+  <p>
+    Your dashboard is ready. Upload your first appointment dataset<br/>
+    to see live KPIs, charts, and no-show analytics.
+  </p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px">
+    <a href="{{ url_for('upload.index') }}" class="btn-save">
+      <i class="fa-solid fa-cloud-arrow-up"></i> Upload CSV Data
+    </a>
+    <a href="{{ url_for('appointments.new') }}" class="btn-cancel" style="display:inline-flex;align-items:center;gap:6px">
+      <i class="fa-solid fa-plus"></i> Add Appointment Manually
+    </a>
+  </div>
+
+  {# ── What happens after upload ── #}
+  <div class="empty-steps">
+    {% for n, icon, title, desc in [
+      (1, "fa-cloud-arrow-up",   "Upload your CSV",     "Import the Kaggle No-Show dataset or your own hospital appointment CSV. Python maps all column names automatically."),
+      (2, "fa-gauge-high",       "See live analytics",  "KPI cards, monthly trend charts, no-show rates, department performance — all computed from your data in real time."),
+      (3, "fa-file-chart-column","Export reports",       "Download CSV reports or print PDF summaries for any analysis page with one click."),
+    ] %}
+    <div class="empty-step">
+      <div class="empty-step-num">{{ n }}</div>
+      <div class="empty-step-icon"><i class="fa-solid {{ icon }}"></i></div>
+      <h4>{{ title }}</h4>
+      <p>{{ desc }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

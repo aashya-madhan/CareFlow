@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% set active = "noshow" %}
+{% block title %}No-Show Analysis{% endblock %}
+{% block page_title %}No-Show Analysis{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>No-Show Analysis</h2>
+  <p>All aggregations computed server-side in Python — charts receive pre-calculated data.</p>
+</div>
+
+{# KPIs #}
+<div class="kpi-grid">
+  {% set cards = [
+    ("No-Show Rate",      kpi.no_show_rate|string+"%",           "fa-user-xmark",          "red",    kpi.no_show|string+" patients"),
+    ("SMS Reduces By",    (kpi.no_sms_no_show_rate - kpi.sms_no_show_rate)|round(1)|string+"%", "fa-comment-sms","teal", kpi.sms_no_show_rate|string+"% with vs "+kpi.no_sms_no_show_rate|string+"% without"),
+    ("Total No-Shows",    kpi.no_show|format_number,              "fa-ban",                 "red",    "appointments missed"),
+    ("High Risk Appts",   kpi.high_risk|format_number,            "fa-triangle-exclamation","orange", kpi.high_risk_pct|string+"% of total"),
+    ("Avg Lead Days",     kpi.avg_lead|string+" days",            "fa-calendar-days",       "blue",   "longer = more risk"),
+    ("Avg Wait Time",     kpi.avg_wait|string+" min",             "fa-stopwatch",           "purple", "per appointment"),
+  ] %}
+  {% for label, value, icon, color, sub in cards %}
+  <div class="kpi-card kpi-{{ color }}">
+    <div class="kpi-icon"><i class="fa-solid {{ icon }}"></i></div>
+    <div class="kpi-body">
+      <div class="kpi-label">{{ label }}</div>
+      <div class="kpi-value">{{ value }}</div>
+      <div class="kpi-sub">{{ sub }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# Charts Row 1 #}
+<div class="charts-row">
+  <div class="chart-card wide">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-chart-bar"></i> No-Show Rate by Department</h3></div>
+    <div class="chart-wrapper"><canvas id="deptRateChart" data-chart="{{ dept_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-comment-sms"></i> SMS Reminder Impact</h3></div>
+    <div class="chart-wrapper"><canvas id="smsChart" data-chart="{{ sms_chart }}"></canvas></div>
+  </div>
+</div>
+
+{# Charts Row 2 #}
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-users"></i> No-Show by Age Group</h3></div>
+    <div class="chart-wrapper"><canvas id="ageChart" data-chart="{{ age_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-venus-mars"></i> No-Show by Gender</h3></div>
+    <div class="chart-wrapper"><canvas id="genderChart" data-chart="{{ gender_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-calendar-week"></i> No-Show by Day</h3></div>
+    <div class="chart-wrapper"><canvas id="dowChart" data-chart="{{ dow_chart }}"></canvas></div>
+  </div>
+</div>
+
+{# Charts Row 3 #}
+<div class="charts-row">
+  <div class="chart-card wide">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-hourglass-half"></i> Lead Time vs No-Show Rate</h3></div>
+    <div class="chart-wrapper"><canvas id="leadChart" data-chart="{{ lead_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-repeat"></i> Previous No-Shows Impact</h3></div>
+    <div class="chart-wrapper"><canvas id="prevChart" data-chart="{{ prev_chart }}"></canvas></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  initChart('deptRateChart', renderDeptComboChart);
+  initChart('smsChart',      renderSmsChart);
+  initChart('ageChart',      renderAgeRateChart);
+  initChart('genderChart',   renderGenderDonut);
+  initChart('dowChart',      renderRadarChart);
+  initChart('leadChart',     renderLeadComboChart);
+  initChart('prevChart',     renderPrevNoShowChart);
+});
+</script>
+{% endblock %}

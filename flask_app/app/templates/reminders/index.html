@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% set active = "reminders" %}
+{% block title %}Appointment Reminders{% endblock %}
+{% block page_title %}Appointment Reminders{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Appointment Reminders</h2>
+  <p>Upcoming scheduled appointments — identify patients who need SMS confirmation.</p>
+</div>
+
+{# ── KPI Cards ─────────────────────────────────────────────────────────── #}
+<div class="kpi-grid">
+  {% for label, value, icon, color, sub in [
+    ("Upcoming (Next 30d)", stats.total_upcoming,  "fa-calendar-check",        "blue",   "scheduled appointments"),
+    ("Due Today",           stats.due_today,        "fa-calendar-day",          "red",    "need immediate attention"),
+    ("Due Tomorrow",        stats.due_tomorrow,     "fa-calendar-plus",         "orange", "prepare reminders now"),
+    ("Due This Week",       stats.due_this_week,    "fa-calendar-week",         "purple", "next 7 days"),
+    ("No SMS Sent",         stats.no_sms,           "fa-comment-slash",         "yellow", "reminder not sent yet"),
+    ("High Risk",           stats.high_risk,        "fa-triangle-exclamation",  "red",    "flagged this week"),
+  ] %}
+  <div class="kpi-card kpi-{{ color }}">
+    <div class="kpi-icon"><i class="fa-solid {{ icon }}"></i></div>
+    <div class="kpi-body">
+      <div class="kpi-label">{{ label }}</div>
+      <div class="kpi-value">{{ "{:,}".format(value) }}</div>
+      <div class="kpi-sub">{{ sub }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Filters ─────────────────────────────────────────────────────────── #}
+<div class="filter-bar">
+  <form method="get" class="filter-inline" id="reminderFilterForm">
+    <div class="filter-group">
+      <label>Window</label>
+      <select name="days" onchange="this.form.submit()">
+        {% for d, l in [(1,"Today Only"),(2,"Next 2 Days"),(7,"Next 7 Days"),(14,"Next 14 Days"),(30,"Next 30 Days")] %}
+        <option value="{{ d }}" {% if days==d %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Risk Level</label>
+      <select name="risk" onchange="this.form.submit()">
+        <option value="all"    {% if filter_risk=='all'    %}selected{% endif %}>All Risk</option>
+        <option value="High"   {% if filter_risk=='High'   %}selected{% endif %}>High</option>
+        <option value="Medium" {% if filter_risk=='Medium' %}selected{% endif %}>Medium</option>
+        <option value="Low"    {% if filter_risk=='Low'    %}selected{% endif %}>Low</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>SMS Status</label>
+      <select name="sms" onchange="this.form.submit()">
+        <option value="all" {% if filter_sms=='all' %}selected{% endif %}>All</option>
+        <option value="no"  {% if filter_sms=='no'  %}selected{% endif %}>Not Sent</option>
+        <option value="yes" {% if filter_sms=='yes' %}selected{% endif %}>Already Sent</option>
+      </select>
+    </div>
+    <a href="{{ url_for('reminders.index') }}" class="btn-reset">
+      <i class="fa-solid fa-rotate-left"></i> Reset
+    </a>
+  </form>
+
+  <div style="margin-left:auto;font-size:.82rem;color:var(--text-2)">
+    <i class="fa-solid fa-circle-info"></i>
+    Showing {{ appts|length }} appointment{{ 's' if appts|length != 1 }}
+    in the next <strong>{{ days }}</strong> day{{ 's' if days != 1 }}
+  </div>
+</div>
+
+{# ── Reminders Table ──────────────────────────────────────────────────── #}
+<div class="table-card">
+  <div class="table-card-header">
+    <h3><i class="fa-solid fa-bell"></i> Scheduled Appointments</h3>
+    <div style="font-size:.8rem;color:var(--text-2)">
+      <span class="badge-status badge-showed"><i class="fa-solid fa-check"></i> SMS Sent</span>
+      &nbsp;
+      <span class="badge-status badge-noshow"><i class="fa-solid fa-xmark"></i> No SMS</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Patient</th>
+          <th>Department</th>
+          <th>Doctor</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Days Away</th>
+          <th>Risk</th>
+          <th>SMS</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appts %}
+        {% set days_away = (a.appointment_date - today).days %}
+        <tr class="{% if days_away == 0 %}row-today{% elif days_away == 1 %}row-tomorrow{% elif a.risk_label == 'High' %}row-high-risk{% endif %}">
+          <td>
+            <a href="{{ url_for('patients.profile', patient_id=a.patient_id) }}" class="patient-link">
+              <strong>{{ a.patient.full_name }}</strong>
+            </a>
+            <br/><small class="text-muted">{{ a.patient.patient_code }}</small>
+          </td>
+          <td>{{ a.department.name }}</td>
+          <td>{{ a.doctor.name }}</td>
+          <td>
+            <strong>{{ a.appointment_date.strftime('%d %b %Y') }}</strong>
+            {% if days_away == 0 %}
+              <span class="badge-status badge-noshow" style="font-size:.68rem">TODAY</span>
+            {% elif days_away == 1 %}
+              <span class="badge-status badge-scheduled" style="font-size:.68rem">TOMORROW</span>
+            {% endif %}
+          </td>
+          <td>{{ a.time_slot or '—' }}</td>
+          <td>
+            {% if days_away == 0 %}
+              <span style="color:var(--red);font-weight:700">Today</span>
+            {% elif days_away == 1 %}
+              <span style="color:var(--orange);font-weight:700">1 day</span>
+            {% else %}
+              <span style="color:var(--text-2)">{{ days_away }} days</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="risk-pill risk-{{ a.risk_label|lower }}">
+              {{ a.risk_label }} ({{ a.risk_score }})
+            </span>
+          </td>
+          <td>
+            {% if a.sms_received %}
+              <span style="color:var(--green)"><i class="fa-solid fa-check-circle"></i> Sent</span>
+            {% else %}
+              <span style="color:var(--red)"><i class="fa-solid fa-xmark-circle"></i> Not Sent</span>
+            {% endif %}
+          </td>
+          <td class="actions-cell">
+            {% if not a.sms_received %}
+            <form method="post" action="{{ url_for('reminders.mark_sms_sent', appt_id=a.id) }}">
+              <button type="submit" class="btn-sms-sent" title="Mark SMS as sent">
+                <i class="fa-solid fa-comment-sms"></i> Mark Sent
+              </button>
+            </form>
+            {% else %}
+              <span style="color:var(--text-3);font-size:.78rem">Confirmed</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" class="empty-row">
+            <i class="fa-solid fa-circle-check" style="color:var(--green)"></i>
+            No upcoming scheduled appointments match the current filters.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <span>{{ appts|length }} appointment{{ 's' if appts|length != 1 }} shown</span>
+    <div class="reminder-legend">
+      <span class="legend-row-today">Today</span>
+      <span class="legend-row-tomorrow">Tomorrow</span>
+      <span class="legend-row-high">High Risk</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

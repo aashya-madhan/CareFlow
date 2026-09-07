@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% set active = "admin" %}
+{% block title %}User Management{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>User Management</h2>
+  <p>Admin only — manage system users.</p>
+</div>
+
+<div class="table-card">
+  <div class="table-card-header">
+    <h3><i class="fa-solid fa-users"></i> System Users</h3>
+    <a href="{{ url_for('admin.new_user') }}" class="btn-add">
+      <i class="fa-solid fa-plus"></i> Add User
+    </a>
+  </div>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><strong>{{ u.full_name }}</strong></td>
+          <td>{{ u.email }}</td>
+          <td>
+            <span class="badge-status {{ 'badge-noshow' if u.role=='admin' else 'badge-showed' }}">
+              {{ u.role }}
+            </span>
+          </td>
+          <td>
+            <span style="color:{{ 'var(--green)' if u.is_active else 'var(--red)' }}">
+              {{ 'Active' if u.is_active else 'Disabled' }}
+            </span>
+          </td>
+          <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+          <td class="actions-cell">
+            <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="action-btn edit">
+              <i class="fa-solid fa-pen"></i>
+            </a>
+            {% if u.id != current_user.id %}
+            <form method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}"
+                  onsubmit="return confirm('Delete {{ u.full_name }}?')" style="display:inline">
+              <button type="submit" class="action-btn delete"><i class="fa-solid fa-trash"></i></button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

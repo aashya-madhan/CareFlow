@@ -1,0 +1,79 @@
+/* ============================================================
+   PRINT / PDF STYLESHEET
+   Applied only when window.print() is called or page is printed.
+   ============================================================ */
+
+@media print {
+  /* ── Hide navigation & interactive controls ── */
+  .sidebar,
+  .topbar,
+  .print-hide,
+  .flash-container,
+  .filter-bar,
+  .table-controls,
+  .actions-cell,
+  .pagination,
+  .btn-add,
+  .btn-reset,
+  .btn-save,
+  .btn-cancel,
+  .btn-report,
+  .btn-print,
+  .btn-import,
+  .btn-upload-browse,
+  .btn-sms-sent,
+  .back-link,
+  .profile-actions,
+  .year-form              { display: none !important; }
+
+  /* ── Full-width layout ── */
+  body                    { background: #fff !important; color: #000 !important; font-size: 11pt; }
+  .main-content           { margin-left: 0 !important; }
+  .page-container         { padding: 0 !important; }
+
+  /* ── Force light colours ── */
+  .kpi-card,
+  .chart-card,
+  .table-card,
+  .form-card,
+  .upload-area,
+  .report-card            { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; }
+
+  .kpi-grid               { grid-template-columns: repeat(4, 1fr) !important; }
+  .charts-row             { grid-template-columns: 1fr 1fr !important; }
+  .chart-card.wide        { grid-column: span 2 !important; }
+
+  /* ── Print header ── */
+  body::before {
+    content: "CareFlow — Hospital Appointment Analytics";
+    display: block;
+    text-align: center;
+    font-size: 16pt;
+    font-weight: bold;
+    margin-bottom: 12pt;
+    border-bottom: 2px solid #000;
+    padding-bottom: 6pt;
+  }
+
+  /* ── Page breaks ── */
+  .table-card             { page-break-inside: avoid; }
+  .chart-card             { page-break-inside: avoid; }
+  h2                      { page-break-after: avoid; }
+
+  /* ── Remove dark mode overrides ── */
+  [data-theme="dark"] *   { background: #fff !important; color: #000 !important; border-color: #ccc !important; }
+
+  /* ── Tables ── */
+  .data-table td,
+  .data-table th          { border: 1px solid #ddd !important; padding: 5pt 7pt !important; }
+  .data-table thead tr    { background: #f0f0f0 !important; }
+  .data-table tbody tr:nth-child(even) { background: #fafafa !important; }
+
+  /* ── Canvas (charts) — make them visible ── */
+  canvas                  { max-width: 100% !important; }
+
+  /* ── Profile specific ── */
+  .profile-header         { border-bottom: 1px solid #ccc; margin-bottom: 12pt; padding-bottom: 8pt; }
+  .profile-badges,
+  .profile-conditions     { flex-wrap: wrap; }
+}

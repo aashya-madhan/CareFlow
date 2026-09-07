@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Overview Dashboard</h2>
+  <p>Live hospital appointment performance — computed by Python from the database.</p>
+</div>
+
+{# ── KPI Cards (rendered by Python) ───────────────────────────────────────── #}
+<div class="kpi-grid">
+  {% set kpi_cards = [
+    ("Total Appointments", kpi.total | format_number,  "fa-calendar-check",        "blue",   "All records"),
+    ("Attendance Rate",    kpi.attendance_rate|string + "%", "fa-user-check",       "green",  kpi.showed|string + " showed up"),
+    ("No-Show Rate",       kpi.no_show_rate|string + "%",    "fa-user-xmark",       "red",    kpi.no_show|string + " no-shows"),
+    ("Cancelled",          kpi.cancelled | format_number,    "fa-calendar-xmark",   "yellow", "appointments"),
+    ("SMS Impact",         kpi.sms_no_show_rate|string + "%","fa-comment-sms",      "teal",   "vs " + kpi.no_sms_no_show_rate|string + "% without SMS"),
+    ("High Risk",          kpi.high_risk | format_number,    "fa-triangle-exclamation","orange", kpi.high_risk_pct|string + "% of total"),
+    ("Avg Wait Time",      kpi.avg_wait|string + " min",     "fa-stopwatch",        "purple", "per appointment"),
+    ("Avg Lead Days",      kpi.avg_lead|string + " days",    "fa-calendar-days",    "indigo", "scheduled ahead"),
+  ] %}
+  {% for label, value, icon, color, sub in kpi_cards %}
+  <div class="kpi-card kpi-{{ color }}">
+    <div class="kpi-icon"><i class="fa-solid {{ icon }}"></i></div>
+    <div class="kpi-body">
+      <div class="kpi-label">{{ label }}</div>
+      <div class="kpi-value">{{ value }}</div>
+      <div class="kpi-sub">{{ sub }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Charts Row 1 ─────────────────────────────────────────────────────────── #}
+<div class="charts-row">
+  <div class="chart-card wide">
+    <div class="chart-card-header">
+      <h3><i class="fa-solid fa-chart-area"></i> Monthly Appointments & No-Shows</h3>
+      <div class="chart-actions">
+        <button class="chart-btn active" onclick="setChartType('monthly','bar',this)">Bar</button>
+        <button class="chart-btn"        onclick="setChartType('monthly','line',this)">Line</button>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="monthlyChart" data-chart="{{ monthly_chart }}"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-circle-half-stroke"></i> Attendance Rate</h3></div>
+    <div class="chart-wrapper">
+      <canvas id="attendanceChart" data-chart="{{ attendance_chart }}"></canvas>
+    </div>
+    <div class="donut-legend">
+      {% for label, color in [("Showed","#16a34a"),("No-Show","#dc2626"),("Cancelled","#ca8a04")] %}
+      <div class="legend-item">
+        <span class="legend-dot" style="background:{{ color }}"></span>{{ label }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# ── Charts Row 2 ─────────────────────────────────────────────────────────── #}
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-building-columns"></i> No-Show by Dept</h3></div>
+    <div class="chart-wrapper"><canvas id="deptChart" data-chart="{{ dept_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-clock"></i> Appointments by Day</h3></div>
+    <div class="chart-wrapper"><canvas id="dowChart" data-chart="{{ dow_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-triangle-exclamation"></i> Top Risk Factors</h3></div>
+    <div class="chart-wrapper"><canvas id="riskChart" data-chart="{{ risk_chart }}"></canvas></div>
+  </div>
+</div>
+
+{# ── Recent Appointments Table (Python-rendered) ───────────────────────────── #}
+<div class="table-card">
+  <div class="table-card-header">
+    <h3><i class="fa-solid fa-table-list"></i> Recent Appointments</h3>
+    <a href="{{ url_for('appointments.index') }}" class="btn-sm-link">View All →</a>
+  </div>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr><th>Patient</th><th>Department</th><th>Doctor</th><th>Date</th><th>Time</th><th>Status</th><th>Risk</th></tr>
+      </thead>
+      <tbody>
+        {% for a in recent.rows %}
+        <tr>
+          <td><strong>{{ a.patient_name }}</strong><br><small class="text-muted">{{ a.patient_code }}</small></td>
+          <td>{{ a.department }}</td>
+          <td>{{ a.doctor }}</td>
+          <td>{{ a.appointment_date }}</td>
+          <td>{{ a.time_slot }}</td>
+          <td>{% include "partials/status_badge.html" %}</td>
+          <td>{% include "partials/risk_pill.html" %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty-row">No appointments yet. <a href="{{ url_for('upload.index') }}">Upload data</a> to get started.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    initChart('monthlyChart',    renderMonthlyChart);
+    initChart('attendanceChart', renderDonutChart);
+    initChart('deptChart',       renderDeptBarChart);
+    initChart('dowChart',        renderDowChart);
+    initChart('riskChart',       renderRiskChart);
+  });
+</script>
+{% endblock %}

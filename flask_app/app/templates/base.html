@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}CareFlow{% endblock %} — Hospital Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/print.css') }}" media="print"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+</head>
+<body>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <i class="fa-solid fa-hospital"></i>
+      <span class="logo-text">CareFlow</span>
+    </div>
+    <button class="sidebar-toggle" id="sidebarToggle"><i class="fa-solid fa-bars"></i></button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul>
+      <li><a href="{{ url_for('dashboard.index') }}"    class="nav-link {% if active=='dashboard'    %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i>        <span>Dashboard</span></a></li>
+      <li><a href="{{ url_for('noshow.index') }}"       class="nav-link {% if active=='noshow'       %}active{% endif %}"><i class="fa-solid fa-user-xmark"></i>        <span>No-Show Analysis</span></a></li>
+      <li><a href="{{ url_for('operational.index') }}"  class="nav-link {% if active=='operational'  %}active{% endif %}"><i class="fa-solid fa-chart-line"></i>         <span>Operational</span></a></li>
+      <li><a href="{{ url_for('demographics.index') }}" class="nav-link {% if active=='demographics' %}active{% endif %}"><i class="fa-solid fa-people-group"></i>       <span>Demographics</span></a></li>
+      <li><a href="{{ url_for('appointments.index') }}" class="nav-link {% if active=='appointments' %}active{% endif %}"><i class="fa-solid fa-calendar-check"></i>     <span>Appointments</span></a></li>
+      <li><a href="{{ url_for('reminders.index') }}"    class="nav-link {% if active=='reminders'    %}active{% endif %}"><i class="fa-solid fa-bell"></i>               <span>Reminders</span><span class="nav-badge" id="reminderBadge" style="display:none"></span></a></li>
+      <li><a href="{{ url_for('patients.index') }}"     class="nav-link {% if active=='patients'     %}active{% endif %}"><i class="fa-solid fa-id-card"></i>            <span>Patients</span></a></li>
+      <li><a href="{{ url_for('upload.index') }}"       class="nav-link {% if active=='upload'       %}active{% endif %}"><i class="fa-solid fa-cloud-arrow-up"></i>     <span>Upload Data</span></a></li>
+      <li><a href="{{ url_for('reports.index') }}"      class="nav-link {% if active=='reports'      %}active{% endif %}"><i class="fa-solid fa-file-chart-column"></i>  <span>Reports</span></a></li>
+      {% if current_user.is_admin %}
+      <li><a href="{{ url_for('admin.users') }}"        class="nav-link {% if active=='admin'        %}active{% endif %}"><i class="fa-solid fa-users-cog"></i>          <span>Admin</span></a></li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar"><i class="fa-solid fa-user-doctor"></i></div>
+      <div class="user-details">
+        <span class="user-name">{{ current_user.full_name }}</span>
+        <span class="user-role">{{ current_user.role | capitalize }}</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ─────────────────────────────────────────────────────────────── -->
+<main class="main-content" id="mainContent">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
+      <span class="page-title">{% block page_title %}{% endblock %}</span>
+    </div>
+    <div class="topbar-right">
+      <!-- Year / Date Range -->
+      <form method="get" class="year-form" id="yearForm">
+        <div class="date-range-picker">
+          <i class="fa-solid fa-calendar-days"></i>
+          <select name="year" onchange="this.form.submit()">
+            {% for val, label in [('all','All Time'),('2024','Year 2024'),('2023','Year 2023'),('q1','Q1 2024'),('q2','Q2 2024'),('q3','Q3 2024'),('q4','Q4 2024')] %}
+            <option value="{{ val }}" {% if year is defined and year==val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+
+      <!-- Dark mode toggle -->
+      <button class="topbar-icon-btn" id="darkToggle" title="Toggle dark mode">
+        <i class="fa-solid fa-moon" id="darkIcon"></i>
+      </button>
+
+      <!-- Print current page -->
+      <button class="topbar-icon-btn print-hide" onclick="window.print()" title="Print / Save as PDF">
+        <i class="fa-solid fa-print"></i>
+      </button>
+
+      <!-- Reminders bell with badge -->
+      <a href="{{ url_for('reminders.index') }}" class="topbar-icon-btn print-hide" title="Reminders">
+        <i class="fa-solid fa-bell"></i>
+        <span class="topbar-badge" id="topbarReminderBadge" style="display:none"></span>
+      </a>
+
+      <!-- Logout -->
+      <a href="{{ url_for('auth.logout') }}" class="btn-logout print-hide" title="Sign Out">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Page content -->
+  <div class="page-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container print-hide">
+      {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}">
+        <i class="fa-solid fa-{% if cat=='success' %}circle-check{% elif cat=='danger' %}circle-exclamation{% elif cat=='warning' %}triangle-exclamation{% else %}circle-info{% endif %}"></i>
+        {{ msg }}
+        <button class="flash-close" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

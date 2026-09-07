@@ -1,0 +1,10 @@
+{% macro kpi_card(label, value, icon, color, sub='') %}
+<div class="kpi-card kpi-{{ color }}">
+  <div class="kpi-icon"><i class="fa-solid {{ icon }}"></i></div>
+  <div class="kpi-body">
+    <div class="kpi-label">{{ label }}</div>
+    <div class="kpi-value">{{ value }}</div>
+    {% if sub %}<div class="kpi-sub">{{ sub }}</div>{% endif %}
+  </div>
+</div>
+{% endmacro %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% set active = "appointments" %}
+{% block title %}{{ "Edit" if action=="edit" else "New" }} Appointment{% endblock %}
+{% block page_title %}{{ "Edit" if action=="edit" else "New" }} Appointment{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>{{ "Edit" if action=="edit" else "Add New" }} Appointment</h2>
+</div>
+
+<div class="form-card">
+  <form method="post">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Patient <span class="req">*</span></label>
+        <select name="patient_id" required class="form-control">
+          <option value="">Select patient…</option>
+          {% for p in patients %}
+          <option value="{{ p.id }}" {% if appt and appt.patient_id==p.id %}selected{% endif %}>
+            {{ p.full_name }} ({{ p.patient_code }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Department <span class="req">*</span></label>
+        <select name="department_id" id="deptSelect" required class="form-control">
+          <option value="">Select department…</option>
+          {% for d in departments %}
+          <option value="{{ d.id }}" {% if appt and appt.department_id==d.id %}selected{% endif %}>
+            {{ d.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Doctor <span class="req">*</span></label>
+        <select name="doctor_id" id="doctorSelect" required class="form-control">
+          <option value="">Select doctor…</option>
+          {% for d in doctors %}
+          <option value="{{ d.id }}" {% if appt and appt.doctor_id==d.id %}selected{% endif %}>
+            {{ d.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Appointment Date <span class="req">*</span></label>
+        <input type="date" name="appointment_date" required class="form-control"
+               value="{{ appt.appointment_date if appt else '' }}"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Time Slot</label>
+        <input type="time" name="time_slot" class="form-control"
+               value="{{ appt.time_slot if appt else '' }}"/>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status" class="form-control">
+          {% for s in ['Scheduled','Showed','No-Show','Cancelled'] %}
+          <option value="{{ s }}" {% if appt and appt.status==s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Lead Days</label>
+        <input type="number" name="lead_days" min="0" class="form-control"
+               value="{{ appt.lead_days if appt else 0 }}"/>
+      </div>
+      <div class="form-group">
+        <label>Prev No-Shows</label>
+        <input type="number" name="previous_no_shows" min="0" class="form-control"
+               value="{{ appt.previous_no_shows if appt else 0 }}"/>
+      </div>
+      <div class="form-group">
+        <label>Wait Minutes</label>
+        <input type="number" name="wait_minutes" min="0" class="form-control"
+               value="{{ appt.wait_minutes if appt else 0 }}"/>
+      </div>
+    </div>
+    <div class="form-group checkbox-group">
+      <label>
+        <input type="checkbox" name="sms_received" {% if appt and appt.sms_received %}checked{% endif %}/>
+        SMS Reminder Sent
+      </label>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea name="notes" rows="3" class="form-control"
+                placeholder="Optional notes…">{{ appt.notes if appt else '' }}</textarea>
+    </div>
+
+    <div class="form-actions">
+      <a href="{{ url_for('appointments.index') }}" class="btn-cancel">Cancel</a>
+      <button type="submit" class="btn-save">
+        <i class="fa-solid fa-floppy-disk"></i>
+        {{ "Update" if action=="edit" else "Create" }} Appointment
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Only dept→doctor cascade uses JS; everything else is Python
+const deptSel   = document.getElementById('deptSelect');
+const doctorSel = document.getElementById('doctorSelect');
+if (deptSel) {
+  deptSel.addEventListener('change', async () => {
+    const deptId = deptSel.value;
+    if (!deptId) return;
+    const res  = await fetch(`/appointments/doctors/${deptId}`);
+    const docs = await res.json();
+    doctorSel.innerHTML = '<option value="">Select doctor…</option>' +
+      docs.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+  });
+}
+</script>
+{% endblock %}

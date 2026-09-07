@@ -1,0 +1,5 @@
+{% set s = a.status %}
+<span class="badge-status badge-{{ s | lower | replace('-','') | replace(' ','') }}">
+  <i class="fa-solid fa-{% if s=='Showed' %}circle-check{% elif s=='No-Show' %}circle-xmark{% elif s=='Cancelled' %}circle-minus{% else %}clock{% endif %}"></i>
+  {{ s }}
+</span>

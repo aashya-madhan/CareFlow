@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% set active = active | default('') %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="empty-state-page">
+  <div class="empty-state-icon">
+    <i class="fa-solid fa-cloud-arrow-up"></i>
+  </div>
+  <h2>No data yet</h2>
+  <p>
+    You haven't uploaded any appointment data yet.<br/>
+    Import a CSV file to see your analytics here.
+  </p>
+  <a href="{{ url_for('upload.index') }}" class="btn-save" style="display:inline-flex;margin-top:8px">
+    <i class="fa-solid fa-cloud-arrow-up"></i> Upload Data Now
+  </a>
+</div>
+{% endblock %}

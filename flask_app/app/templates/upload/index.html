@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% set active = "upload" %}
+{% block title %}Upload Data{% endblock %}
+{% block page_title %}Upload Data{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Upload Data</h2>
+  <p>Import appointment records from CSV. Python parses every row — no client-side processing.</p>
+</div>
+
+{# ── Danger zone: clear data ──────────────────────────────── #}
+<div class="table-card" style="margin-bottom:1.5rem;border:1px solid var(--danger,#dc2626)22">
+  <div class="table-card-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+    <div>
+      <h3 style="color:var(--danger,#dc2626)"><i class="fa-solid fa-trash-can"></i> Clear My Data</h3>
+      <p style="margin:0;opacity:.75;font-size:.9rem">
+        Permanently removes all appointments and patients you have uploaded. Departments, doctors, and other users are not affected.
+      </p>
+    </div>
+    <form method="post" action="{{ url_for('upload.clear_data') }}" id="clearForm">
+      <button type="button" class="btn btn-danger" id="btnClear"
+              style="background:var(--danger,#dc2626);color:#fff;border:none;padding:.5rem 1.2rem;border-radius:.4rem;cursor:pointer;font-size:.9rem">
+        <i class="fa-solid fa-trash-can"></i> Clear All My Data
+      </button>
+    </form>
+  </div>
+</div>
+
+{# ── Loading Overlay (shown while import runs) ─────────────── #}
+<div class="import-overlay" id="importOverlay" style="display:none">
+  <div class="import-overlay-box">
+    <div class="import-spinner"></div>
+    <h3>Importing data…</h3>
+    <p id="importMsg">Reading CSV and inserting records into PostgreSQL.<br/>
+       Large files (100k+ rows) may take up to 60 seconds. Please wait.</p>
+    <div class="import-progress-bar">
+      <div class="import-progress-fill" id="importProgressFill"></div>
+    </div>
+    <p class="import-tip">
+      <i class="fa-solid fa-circle-info"></i>
+      Do not close or refresh this tab.
+    </p>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="uploadForm">
+  <div class="upload-area" id="uploadArea">
+    <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+    <h3>Drag &amp; Drop your CSV file here</h3>
+    <p>or click Browse. Supports the Kaggle Medical No-Show dataset and custom CSV formats.</p>
+    <input type="file" name="csv_file" id="csvInput" accept=".csv" style="display:none"/>
+    <button type="button" class="btn-upload-browse" id="btnBrowse">
+      <i class="fa-solid fa-folder-open"></i> Browse File
+    </button>
+  </div>
+
+  <div class="upload-preview" id="uploadPreview" style="display:none">
+    <div class="upload-file-info">
+      <i class="fa-solid fa-file-csv"></i>
+      <div>
+        <strong id="uploadFileName">—</strong>
+        <span id="uploadFileSize">—</span>
+      </div>
+      <button type="button" class="btn-remove-file" id="btnRemoveFile" title="Remove file">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <button type="submit" class="btn-import" id="btnImport">
+      <i class="fa-solid fa-database" id="importIcon"></i>
+      <span id="importBtnText">Import to Database</span>
+    </button>
+  </div>
+</form>
+
+{# ── Result block (rendered by Python after POST) ─────────── #}
+{% if result %}
+<div class="upload-result {{ 'success' if result.success else 'error' }}" id="importResult">
+  <i class="fa-solid fa-{{ 'circle-check' if result.success else 'circle-exclamation' }}"></i>
+  <div>
+    {% if result.success %}
+      <strong>Import Successful!</strong><br/>
+      <span style="font-size:1.05rem;font-weight:700">
+        {{ result.inserted | format_number }} records inserted
+      </span>
+      {% if result.skipped %}, {{ result.skipped }} skipped{% endif %}.
+      {% if result.errors %}
+      <br/><small style="opacity:.8">First errors: {{ result.errors | join(' | ') }}</small>
+      {% endif %}
+      <br/><small>
+        <a href="{{ url_for('dashboard.index') }}" style="color:inherit;text-decoration:underline">
+          Go to Dashboard →
+        </a>
+      </small>
+    {% else %}
+      <strong>Import Failed:</strong> {{ result.error }}
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Expected columns reference ───────────────────────────── #}
+<div class="table-card" style="margin-top:2rem">
+  <div class="table-card-header">
+    <h3><i class="fa-solid fa-circle-info"></i> Expected CSV Columns</h3>
+  </div>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead><tr><th>Column Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        {% for col, typ, req, desc in [
+          ("patient_code / PatientId",        "string",              True,  "Unique patient identifier"),
+          ("full_name / name",                "string",              False, "Patient full name"),
+          ("age",                             "integer",             True,  "Patient age in years"),
+          ("gender / sex",                    "M/F or Male/Female",  True,  "Patient gender"),
+          ("neighbourhood",                   "string",              False, "Patient neighbourhood"),
+          ("scholarship",                     "0/1 or Yes/No",       False, "Welfare assistance"),
+          ("hipertension / hypertension",     "0/1",                 False, "Has hypertension"),
+          ("diabetes",                        "0/1",                 False, "Has diabetes"),
+          ("alcoholism",                      "0/1",                 False, "Has alcoholism"),
+          ("handcap / handicap",              "0/1",                 False, "Has disability"),
+          ("appointment_date / AppointmentDay","date",               True,  "Appointment date"),
+          ("scheduled_date / ScheduledDay",   "date",                False, "Date appointment was booked"),
+          ("no_show / status",                "Yes/No or Showed/No-Show", True, "Kaggle: Yes=No-Show, No=Showed"),
+          ("sms_received / SMS_received",     "0/1",                 False, "SMS reminder sent"),
+          ("department",                      "string",              False, "Dept name (auto-assigned if missing)"),
+          ("doctor",                          "string",              False, "Doctor name"),
+        ] %}
+        <tr>
+          <td><code>{{ col }}</code></td>
+          <td>{{ typ }}</td>
+          <td>{% if req %}<span class="badge-status badge-showed">Yes</span>{% endif %}</td>
+          <td>{{ desc }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const input     = document.getElementById('csvInput');
+const preview   = document.getElementById('uploadPreview');
+const area      = document.getElementById('uploadArea');
+const form      = document.getElementById('uploadForm');
+const overlay   = document.getElementById('importOverlay');
+const btnImport = document.getElementById('btnImport');
+const btnBrowse = document.getElementById('btnBrowse');
+const btnRemove = document.getElementById('btnRemoveFile');
+const msgEl     = document.getElementById('importMsg');
+const fill      = document.getElementById('importProgressFill');
+
+// ── Clear data confirmation ──────────────────────────────────
+const btnClear = document.getElementById('btnClear');
+const clearForm = document.getElementById('clearForm');
+if (btnClear) {
+  btnClear.addEventListener('click', () => {
+    if (confirm('This will permanently delete all appointments and patients you uploaded. This cannot be undone.\n\nAre you sure?')) {
+      clearForm.submit();
+    }
+  });
+}
+
+// ── File browsing ────────────────────────────────────────────
+btnBrowse.addEventListener('click', () => input.click());
+input.addEventListener('change', () => { if (input.files[0]) showPreview(input.files[0]); });
+
+// ── Drag & drop ──────────────────────────────────────────────
+area.addEventListener('dragover',  e => { e.preventDefault(); area.classList.add('drag-over'); });
+area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+area.addEventListener('drop', e => {
+  e.preventDefault(); area.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.name.endsWith('.csv')) { input.files = e.dataTransfer.files; showPreview(f); }
+  else if (f) alert('Only CSV files are accepted.');
+});
+
+// ── Remove file ──────────────────────────────────────────────
+btnRemove?.addEventListener('click', () => {
+  input.value = '';
+  preview.style.display = 'none';
+});
+
+// ── Show preview ─────────────────────────────────────────────
+function showPreview(f) {
+  document.getElementById('uploadFileName').textContent = f.name;
+  const kb = f.size / 1024;
+  document.getElementById('uploadFileSize').textContent =
+    kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb.toFixed(1) + ' KB';
+  preview.style.display = 'flex';
+}
+
+// ── Form submit → show loading overlay ──────────────────────
+form.addEventListener('submit', e => {
+  if (!input.files || input.files.length === 0) {
+    e.preventDefault();
+    alert('Please select a CSV file first.');
+    return;
+  }
+
+  const fileSizeKB = input.files[0].size / 1024;
+
+  // Disable button immediately to prevent double-submit
+  btnImport.disabled = true;
+  document.getElementById('importBtnText').textContent = 'Importing…';
+  document.getElementById('importIcon').className = 'fa-solid fa-spinner fa-spin';
+
+  // Show full overlay
+  overlay.style.display  = 'flex';
+
+  // Set a helpful message based on file size
+  if (fileSizeKB > 5000) {
+    msgEl.innerHTML =
+      `Reading ${(fileSizeKB / 1024).toFixed(1)} MB CSV and inserting into PostgreSQL.<br/>
+       Large datasets (100k+ rows) take <strong>30–90 seconds</strong>. Please wait.`;
+  } else {
+    msgEl.innerHTML =
+      `Reading CSV and inserting records into PostgreSQL.<br/>
+       This usually takes a few seconds.`;
+  }
+
+  // Animate the fake progress bar (doesn't track actual progress,
+  // just reassures the user the page isn't frozen)
+  let pct = 0;
+  const timer = setInterval(() => {
+    // Slow down as it approaches 90% — never quite reaches 100% until server responds
+    const step = pct < 30 ? 3 : pct < 60 ? 1.5 : pct < 80 ? 0.7 : pct < 90 ? 0.2 : 0;
+    pct = Math.min(pct + step, 92);
+    if (fill) fill.style.width = pct + '%';
+  }, 400);
+
+  // Store timer so we can clear it if needed
+  form._progressTimer = timer;
+});
+
+// ── Scroll to result if present ──────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const result = document.getElementById('importResult');
+  if (result) {
+    result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+});
+</script>
+{% endblock %}

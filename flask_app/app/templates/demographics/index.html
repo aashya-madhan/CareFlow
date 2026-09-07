@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% set active = "demographics" %}
+{% block title %}Patient Demographics{% endblock %}
+{% block page_title %}Patient Demographics{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Patient Demographics</h2>
+  <p>Population breakdown computed in Python — zero logic in JavaScript.</p>
+</div>
+
+<div class="kpi-grid">
+  {% set cards = [
+    ("Total Appointments", kpi.total|format_number,       "fa-calendar-check",   "blue",   ""),
+    ("No-Show Rate",       kpi.no_show_rate|string+"%",   "fa-user-xmark",       "red",    kpi.no_show|string+" missed"),
+    ("SMS Coverage",       kpi.sms_no_show_rate|string+"%","fa-comment-sms",     "teal",   "no-show rate with SMS"),
+    ("Avg Age proxy",      kpi.avg_lead|string+" d lead",  "fa-calendar-days",   "purple", "avg lead days"),
+    ("High Risk",          kpi.high_risk|format_number,    "fa-triangle-exclamation","orange","appointments"),
+    ("Avg Wait",           kpi.avg_wait|string+" min",     "fa-stopwatch",        "green",  "per appointment"),
+  ] %}
+  {% for label, value, icon, color, sub in cards %}
+  <div class="kpi-card kpi-{{ color }}">
+    <div class="kpi-icon"><i class="fa-solid {{ icon }}"></i></div>
+    <div class="kpi-body">
+      <div class="kpi-label">{{ label }}</div>
+      <div class="kpi-value">{{ value }}</div>
+      {% if sub %}<div class="kpi-sub">{{ sub }}</div>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="charts-row">
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-chart-bar"></i> Age Distribution</h3></div>
+    <div class="chart-wrapper"><canvas id="ageChart" data-chart="{{ age_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-venus-mars"></i> Gender Split</h3></div>
+    <div class="chart-wrapper"><canvas id="genderChart" data-chart="{{ gender_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-map-location-dot"></i> By Neighbourhood</h3></div>
+    <div class="chart-wrapper"><canvas id="neighChart" data-chart="{{ neighbourhood_chart }}"></canvas></div>
+  </div>
+</div>
+
+<div class="charts-row">
+  <div class="chart-card wide">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-disease"></i> Chronic Condition Impact on No-Show</h3></div>
+    <div class="chart-wrapper"><canvas id="conditionChart" data-chart="{{ condition_chart }}"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-header"><h3><i class="fa-solid fa-star"></i> Visit Frequency</h3></div>
+    <div class="chart-wrapper"><canvas id="loyaltyChart" data-chart="{{ loyalty_chart }}"></canvas></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  initChart('ageChart',       renderAgeRateChart);
+  initChart('genderChart',    renderGenderDonut);
+  initChart('neighChart',     renderNeighChart);
+  initChart('conditionChart', renderConditionChart);
+  initChart('loyaltyChart',   renderDonutChart);
+});
+</script>
+{% endblock %}

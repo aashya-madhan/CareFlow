@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% set active = "reports" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports & Export{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Reports &amp; Export</h2>
+  <p>Python streams CSV files directly from the database — no client-side CSV building.</p>
+</div>
+
+<div class="reports-grid">
+  {% for key, meta in reports.items() %}
+  <div class="report-card">
+    <div class="report-icon report-icon-{{ meta.color }}">
+      <i class="fa-solid {{ meta.icon }}"></i>
+    </div>
+    <div class="report-info">
+      <h4>{{ meta.title }}</h4>
+      <p>
+        {% if key=='summary'    %}High-level KPIs, no-show rates, monthly trends.
+        {% elif key=='noshow'   %}Full list of no-show appointments with risk data.
+        {% elif key=='department' %}Per-department breakdown, wait times, rates.
+        {% elif key=='doctor'   %}Per-doctor appointment counts and no-show stats.
+        {% elif key=='full'     %}Complete raw dataset — all fields included.
+        {% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('reports.export', report_type=key, year=year) }}"
+       class="btn-report">
+      <i class="fa-solid fa-download"></i> Export CSV
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
